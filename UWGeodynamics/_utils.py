@@ -8,6 +8,7 @@ import operator as op
 from UWGeodynamics import non_dimensionalise as nd
 from UWGeodynamics import dimensionalise
 from UWGeodynamics import UnitRegistry as u
+from UWGeodynamics.scaling import ndargs
 from .Underworld_extended._utils import _swarmvarschema
 from .Underworld_extended import Swarm
 from scipy import spatial
@@ -29,10 +30,11 @@ class PhaseChange(object):
 
 
 class WaterFill(PhaseChange):
-
+    
+    @ndargs
     def __init__(self, sealevel, water_material=None):
 
-        self.condition = fn.input()[1] < nd(sealevel)
+        self.condition = fn.input()[1] < sealevel
         self.result = water_material.index
 
 
@@ -92,10 +94,11 @@ class PassiveTracers(Swarm):
         self.global_index = self.add_variable(dataType="long", count=1)
         self.global_index.data[:, 0] = pairs.view(np.int64)
 
+    @ndargs
     def add_particles_with_coordinates(self, vertices, **kwargs):
 
         vals = super(PassiveTracers,
-                     self).add_particles_with_coordinates(nd(vertices),
+                     self).add_particles_with_coordinates(vertices,
                                                           **kwargs)
         self.advector = uw.systems.SwarmAdvector(
             swarm=self,
@@ -221,6 +224,7 @@ class PassiveTracers(Swarm):
 
 class Balanced_InflowOutflow(object):
 
+    @ndargs
     def __init__(self, vtop, top, pt1, pt2, ynodes=None,
                  tol=1e-12, nitmax=200,
                  nitmin=3, default_vel=0.0):
@@ -256,14 +260,14 @@ class Balanced_InflowOutflow(object):
 
     def _get_side_flow(self):
 
-        Vtop = nd(self.vtop)
-        top = nd(self.top)
-        pt1 = nd(self.pt1)
-        pt2 = nd(self.pt2)
-        y = nd(self.ynodes)
+        Vtop = self.vtop
+        top = self.top
+        pt1 = self.pt1
+        pt2 = self.pt2
+        y = self.ynodes
         tol = self.tol
         nitmin = self.nitmin
-        default_vel = nd(self.default_vel)
+        default_vel = self.default_vel
 
         # locate index of closest node coordinates
         top_idx = np.argmin((y - top)**2)
@@ -324,6 +328,7 @@ class Balanced_InflowOutflow(object):
         return velocity
 
 
+@ndargs
 def circles_grid(radius, minCoord, maxCoord, npoints=72):
     """ This function creates a set of circles using passive tracers
 
@@ -354,13 +359,13 @@ def circles_grid(radius, minCoord, maxCoord, npoints=72):
     if len(minCoord) == 2:
         # Create points on circle
         angles = np.linspace(0, 360, npoints)
-        radius = nd(radius)
+        radius = radius
         x = radius * np.cos(np.radians(angles))
         y = radius * np.sin(np.radians(angles))
 
         # Calculate centroids
-        xc = np.arange(nd(minCoord[0]), nd(maxCoord[0]) + radius, 2. * radius)
-        yc = np.arange(nd(minCoord[1]) + radius, nd(maxCoord[1]), 2. * radius * np.sqrt(3) / 2.)
+        xc = np.arange(minCoord[0], maxCoord[0] + radius, 2. * radius)
+        yc = np.arange(minCoord[1] + radius, maxCoord[1], 2. * radius * np.sqrt(3) / 2.)
         xc, yc = np.meshgrid(xc, yc)
         # Shift every other row by radius
         xc[::2, :] = xc[::2, :] + radius
@@ -386,7 +391,6 @@ def circles_grid(radius, minCoord, maxCoord, npoints=72):
         # Create points on circle
         theta = np.linspace(0, 180, npoints)
         phi = np.linspace(0, 360, npoints)
-        radius = nd(radius)
         theta, phi = np.meshgrid(theta, phi)
 
         x = radius * np.sin(np.radians(theta.ravel())) * np.cos(np.radians(phi.ravel()))
@@ -394,9 +398,9 @@ def circles_grid(radius, minCoord, maxCoord, npoints=72):
         z = radius * np.cos(np.radians(theta.ravel()))
 
         # Calculate centroids
-        xc = np.arange(nd(minCoord[0]) + radius, nd(maxCoord[0]) + radius, 2. * radius)
-        yc = np.arange(nd(minCoord[1]) + radius, nd(maxCoord[1]) + radius, 2. * radius * np.sqrt(3)/2.)
-        zc = np.arange(nd(minCoord[2]) + radius, nd(maxCoord[2]) + radius, 2. * radius * np.sqrt(3)/2.)
+        xc = np.arange(minCoord[0] + radius, maxCoord[0] + radius, 2. * radius)
+        yc = np.arange(minCoord[1] + radius, maxCoord[1] + radius, 2. * radius * np.sqrt(3)/2.)
+        zc = np.arange(minCoord[2] + radius, maxCoord[2] + radius, 2. * radius * np.sqrt(3)/2.)
         xc, yc, zc = np.meshgrid(xc, yc, zc)
         # Shift every other row by radius
         yc[:, ::2, :] += radius
@@ -424,31 +428,29 @@ def circles_grid(radius, minCoord, maxCoord, npoints=72):
 
         return coords
 
-
+@ndargs
 def circle_points_tracers(radius, centre=tuple([0., 0.]), npoints=72):
     angles = np.linspace(0, 360, npoints)
-    radius = nd(radius)
-    x = radius * np.cos(np.radians(angles)) + nd(centre[0])
-    y = radius * np.sin(np.radians(angles)) + nd(centre[1])
+    x = radius * np.cos(np.radians(angles)) + centre[0]
+    y = radius * np.sin(np.radians(angles)) + centre[1]
     coords = np.ndarray((x.size, 2))
     coords[:, 0] = x
     coords[:, 1] = y
     return coords
 
-
+@ndargs
 def sphere_points_tracers(radius, centre=tuple([0., 0., 0.]), npoints=30):
     theta = np.linspace(0, 180, npoints)
     phi = np.linspace(0, 360, npoints)
-    radius = nd(radius)
     theta, phi = np.meshgrid(theta, phi)
 
     x = radius * np.sin(np.radians(theta.ravel())) * np.cos(np.radians(phi.ravel()))
     y = radius * np.sin(np.radians(theta.ravel())) * np.sin(np.radians(phi.ravel()))
     z = radius * np.cos(np.radians(theta.ravel()))
 
-    x += nd(centre[0])
-    y += nd(centre[1])
-    z += nd(centre[2])
+    x += centre[0]
+    y += centre[1]
+    z += centre[2]
 
     # Finally, returns a 2D array
     coords = np.ndarray((x.size, 2))
@@ -473,7 +475,7 @@ class Nearest_neighbors_projector(object):
         pts = self.swarm.particleCoordinates.data[ids, :]
         self.mesh_variable.data[...] = self.swarm_variable.evaluate(pts)
 
-
+@ndargs
 def fn_Tukey_window(r, centre, width, top, bottom):
     """ Define a tuckey window
 
@@ -482,11 +484,6 @@ def fn_Tukey_window(r, centre, width, top, bottom):
     see tappered cosine function
 
     """
-
-    centre = nd(centre)
-    width = nd(width)
-    top = nd(top)
-    bottom = nd(bottom)
 
     x = fn.input()[0]
     y = fn.input()[1]
@@ -506,6 +503,7 @@ def fn_Tukey_window(r, centre, width, top, bottom):
 
 class MovingWall(object):
 
+    @ndargs
     def __init__(self, velocity):
 
         self._Model = None
@@ -517,7 +515,7 @@ class MovingWall(object):
         if isinstance(velocity, (list, tuple)):
             self.velocityFn = fn.branching.conditional(velocity)
         else:
-            self.velocityFn = fn.misc.constant(nd(velocity))
+            self.velocityFn = fn.misc.constant(velocity)
 
         self.wall_operators = {"left": op.le,
                           "right": op.ge,
@@ -588,7 +586,7 @@ class MovingWall(object):
         pos = self.wall_init_pos[self._wall]
         condition = [(operator(fn.input()[axis],(self._time *
                                         self.velocityFn +
-                                        nd(pos))), True),
+                                        pos)), True),
                      (True, False)]
 
         return fn.branching.conditional(condition)
@@ -615,6 +613,7 @@ class MovingWall(object):
         self.Model.materialField.data[...] = func.evaluate(self.Model.swarm)
 
 
+@ndargs
 def extract_profile(field,
                     line,
                     nsamples=1000):
@@ -631,7 +630,7 @@ def extract_profile(field,
         raise NotImplementedError("""The extract_profile function will not work
                                   in parallel""")
 
-    coords = np.array([(nd(x), nd(y)) for (x, y) in line])
+    coords = np.array([(x, y) for (x, y) in line])
 
     x = np.linspace(coords[0, 0], coords[-1, 0], nsamples)
 

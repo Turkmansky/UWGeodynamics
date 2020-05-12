@@ -1,5 +1,4 @@
 import numpy as np
-from UWGeodynamics import non_dimensionalise as nd
 from .Underworld_extended import MeshVariable
 from scipy.interpolate import interp1d
 import copy
@@ -75,8 +74,6 @@ class ReMesher(object):
 
             if isinstance(self.x, tuple):
                 intervals, elements = self.x
-                intervals = [nd(val) for val in intervals]
-                elements = [nd(val) for val in elements]
                 check_vals(intervals, elements, 0)
                 pts = new_points(intervals, elements)
             if isinstance(self.x, MeshVariable):
@@ -92,8 +89,6 @@ class ReMesher(object):
 
             if isinstance(self.y, tuple):
                 intervals, elements = self.y
-                intervals = [nd(val) for val in intervals]
-                elements = [nd(val) for val in elements]
                 check_vals(intervals, elements, 1)
                 pts = new_points(intervals, elements)
             if isinstance(self.y, MeshVariable):
@@ -109,8 +104,6 @@ class ReMesher(object):
 
             if isinstance(self.z, tuple):
                 intervals, elements = self.z
-                intervals = [nd(val) for val in intervals]
-                elements = [nd(val) for val in elements]
                 check_vals(intervals, elements, -1)
                 pts = new_points(intervals, elements)
             if isinstance(self.z, MeshVariable):

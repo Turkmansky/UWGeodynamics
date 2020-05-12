@@ -15,3 +15,4 @@ from ._scaling import non_dimensionalise
 from ._scaling import dimensionalise
 from ._scaling import u as units
 from ._scaling import get_coefficients
+from ._scaling import ndargs

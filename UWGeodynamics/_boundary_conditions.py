@@ -2,8 +2,8 @@ from __future__ import print_function,  absolute_import
 import numpy as np
 import underworld as uw
 import underworld.function as fn
-from UWGeodynamics import non_dimensionalise as nd
 from UWGeodynamics import UnitRegistry as u
+from UWGeodynamics.scaling import ndargs
 from .LecodeIsostasy import LecodeIsostasy
 from ._material import Material
 from ._utils import Balanced_InflowOutflow
@@ -13,6 +13,7 @@ from ._utils import MovingWall
 class BoundaryConditions(object):
     """Base Class for Boundary Condition objects"""
 
+    @ndargs
     def __init__(self, Model, field, varfield, left=None, right=None,
                  top=None, bottom=None, front=None, back=None,
                  nodeSets=tuple(), materials=None, order_wall_conditions=None,
@@ -180,7 +181,7 @@ class BoundaryConditions(object):
 
                 # Scalar condition
                 if isinstance(condition[dim], (u.Quantity, float, int)):
-                    self.field.data[nodes.data, dim] = nd(condition[dim])
+                    self.field.data[nodes.data, dim] = condition[dim]
                     self._add_to_indices(dim, nodes)
 
                 # If it's an Underworld function
@@ -239,6 +240,7 @@ class BoundaryConditions(object):
 class VelocityBCs(BoundaryConditions):
     """ Class to define the mechanical boundary conditions """
 
+    @ndargs
     def __init__(self, Model, left=None, right=None, top=None, bottom=None,
                  front=None, back=None, nodeSets=None, materials=None,
                  order_wall_conditions=None):
@@ -406,6 +408,7 @@ class VelocityBCs(BoundaryConditions):
 class StressBCs(BoundaryConditions):
     """ Class to define the stress boundary conditions """
 
+    @ndargs
     def __init__(self, Model, left=None, right=None, top=None, bottom=None,
                  front=None, back=None, nodeSets=tuple(), materials=None,
                  order_wall_conditions=None):
@@ -481,6 +484,7 @@ _dim_heat_flux = {"[mass]": 1.0, "[time]": -3.0}
 
 class TemperatureBCs(BoundaryConditions):
 
+    @ndargs
     def __init__(self, Model, left=None, right=None, top=None, bottom=None,
                  front=None, back=None, nodeSets=None, materials=None,
                  order_wall_conditions=None):
@@ -552,6 +556,7 @@ class TemperatureBCs(BoundaryConditions):
 
 class HeatFlowBCs(BoundaryConditions):
 
+    @ndargs
     def __init__(self, Model, left=None, right=None, top=None, bottom=None,
                  front=None, back=None, nodeSets=None, materials=None,
                  order_wall_conditions=None):

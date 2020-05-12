@@ -8,8 +8,8 @@ from os import path
 
 MAJOR               = 2
 MINOR               = 9
-MICRO               = 6
-ISRELEASED          = True
+MICRO               = 7
+ISRELEASED          = False
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 here = path.abspath(path.dirname(__file__))

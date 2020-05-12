@@ -32,6 +32,7 @@ from datetime import datetime
 from .version import full_version
 from ._freesurface import FreeSurfaceProcessor
 from ._remeshing import ReMesher
+from .scaling import ndargs
 
 comm = _MPI.COMM_WORLD
 rank = comm.rank
@@ -44,6 +45,7 @@ _dim_time = {'[time]': 1.0}
 class Model(Material):
     """UWGeodynamic Model Class"""
 
+    @ndargs
     def __init__(self, elementRes=(64, 64),
                  minCoord=(0., 0.), maxCoord=(64. * u.km, 64 * u.km),
                  name="Model", gravity=(0., -9.81 * u.m / u.s**2),
@@ -152,10 +154,6 @@ class Model(Material):
         else:
             periodic = tuple([False for val in maxCoord])
             self.periodic = periodic
-
-        # Get non-dimensional extents along each axis
-        minCoord = tuple([nd(val) for val in self.minCoord])
-        maxCoord = tuple([nd(val) for val in self.maxCoord])
 
         # Initialize model mesh
         self.mesh = FeMesh_Cartesian(elementType=self.elementType,
@@ -344,24 +342,14 @@ class Model(Material):
         return dimensionalise(self._ndtime, rcParams["time.SIunits"])
 
     @time.setter
+    @ndargs
     def time(self, value):
         """Model time"""
-        self._ndtime = nd(value)
+        self._ndtime = value
 
-    @property
-    def x(self):
-        """x"""
-        return fn.input()[0]
-
-    @property
-    def y(self):
-        """y"""
-        return fn.input()[1]
-
-    @property
-    def z(self):
-        """z"""
-        return fn.input()[2]
+    x = fn.input()[0]
+    y = fn.input()[1]
+    z = fn.input()[2]
 
     @property
     def outputDir(self):
@@ -507,6 +495,7 @@ class Model(Material):
             self._surfaceProcesses.timeField = self.timeField
             self._surfaceProcesses.Model = self
 
+    @ndargs
     def set_temperatureBCs(self, left=None, right=None,
                            top=None, bottom=None,
                            front=None, back=None,
@@ -630,6 +619,7 @@ class Model(Material):
                                               materials=materials)
         return self._temperatureBCs.get_conditions()
 
+    @ndargs
     def set_heatFlowBCs(self, left=None, right=None,
                         top=None, bottom=None,
                         front=None, back=None):
@@ -795,11 +785,11 @@ class Model(Material):
         DiffusivityMap = {}
         for material in self.materials:
             if material.diffusivity:
-                DiffusivityMap[material.index] = nd(material.diffusivity)
+                DiffusivityMap[material.index] = material.diffusivity
 
         self.DiffusivityFn = fn.branching.map(fn_key=self.materialField,
                                               mapping=DiffusivityMap,
-                                              fn_default=nd(self.diffusivity))
+                                              fn_default=self.diffusivity)
 
         HeatProdMap = {}
         for material in self.materials:
@@ -808,8 +798,8 @@ class Model(Material):
                     material.radiogenicHeatProd]):
 
                 HeatProdMap[material.index] = (
-                    nd(material.radiogenicHeatProd) /
-                    (self._densityFn * nd(material.capacity)))
+                    material.radiogenicHeatProd /
+                    (self._densityFn * material.capacity))
             else:
                 HeatProdMap[material.index] = 0.
 
@@ -841,7 +831,7 @@ class Model(Material):
 
     @property
     def _buoyancyFn(self):
-        gravity = tuple([nd(val) for val in self.gravity])
+        gravity = tuple([val for val in self.gravity])
         return self._densityFn * gravity
 
     @property
@@ -881,6 +871,7 @@ class Model(Material):
                                       mapping=meltFractionMap, fn_default=0.0)
             self.meltField.data[:] = InitFn.evaluate(self.swarm)
 
+    @ndargs
     def set_velocityBCs(self, left=None, right=None, top=None, bottom=None,
                         front=None, back=None, nodeSets=None,
                         order_wall_conditions=None):
@@ -1234,7 +1225,7 @@ class Model(Material):
                 densityMap[material.index] = dens_handler.effective_density()
             else:
                 dens_handler = material.density
-                densityMap[material.index] = nd(dens_handler.reference_density)
+                densityMap[material.index] = dens_handler.reference_density
 
             if material.meltExpansion:
                 fact = material.meltExpansion * self.meltField
@@ -1314,7 +1305,7 @@ class Model(Material):
         dt_e = []
         for material in self.materials:
             if material.elasticity:
-                dt_e.append(nd(material.elasticity.observation_time))
+                dt_e.append(material.elasticity.observation_time)
         dt_e = np.array(dt_e).min()
         phi = dt / dt_e
         veStressFn_data = self._stressFn.evaluate(self.swarm)
@@ -1344,12 +1335,12 @@ class Model(Material):
             DiffusivityMap = {}
             for material in self.materials:
                 if material.diffusivity:
-                    DiffusivityMap[material.index] = nd(material.diffusivity)
+                    DiffusivityMap[material.index] = material.diffusivity
 
             self.DiffusivityFn = fn.branching.map(
                 fn_key=self.materialField,
                 mapping=DiffusivityMap,
-                fn_default=nd(self.diffusivity)
+                fn_default=self.diffusivity
             )
 
             HeatProdMap = {}
@@ -1360,9 +1351,9 @@ class Model(Material):
                         material.radiogenicHeatProd]):
 
                     HeatProdMap[material.index] = (
-                        nd(material.radiogenicHeatProd) /
+                        material.radiogenicHeatProd /
                         self._densityFn  /
-                        nd(material.capacity)
+                        material.capacity
                     )
 
                 else:
@@ -1376,8 +1367,8 @@ class Model(Material):
             self.HeatProdFn = fn.branching.map(fn_key=self.materialField,
                                                mapping=HeatProdMap)
         else:
-            self.DiffusivityFn = fn.misc.constant(nd(self.diffusivity))
-            self.HeatProdFn = fn.misc.constant(nd(self.radiogenicHeatProd))
+            self.DiffusivityFn = fn.misc.constant(self.diffusivity)
+            self.HeatProdFn = fn.misc.constant(self.radiogenicHeatProd)
 
         conditions = []
         conditions.append(self.temperatureBCs)
@@ -1420,7 +1411,7 @@ class Model(Material):
             Lithostatic pressure field as a mesh variable
 
         """
-        gravity = np.abs(nd(self.gravity[-1]))
+        gravity = np.abs(self.gravity[-1])
         return Lithostatic_pressure(self.mesh, self._densityFn, gravity)
 
     def _calibrate_pressureField(self):
@@ -1528,6 +1519,7 @@ class Model(Material):
 
         return
 
+    @ndargs
     def run_for(self, duration=None, checkpoint_interval=None, nstep=None,
                 checkpoint_times=None, restart_checkpoint=1, dt=None,
                 restartStep=None, restartDir=None, output_units=None):
@@ -1566,7 +1558,7 @@ class Model(Material):
         self.stepDone = 0
         self.restart(restartStep, restartDir)
 
-        ndduration = self._ndtime + nd(duration) if duration else None
+        ndduration = self._ndtime + duration if duration else None
 
         output_dt_units = _get_output_units(
             output_units, checkpoint_interval, duration)
@@ -1579,7 +1571,7 @@ class Model(Material):
             nstep = self.stepDone
 
         if dt:
-            user_dt = nd(dt)
+            user_dt = dt
         else:
             user_dt = None
 
@@ -1622,7 +1614,7 @@ class Model(Material):
             dte = []
             for material in self.materials:
                 if material.elasticity:
-                    dte.append(nd(material.elasticity.observation_time))
+                    dte.append(material.elasticity.observation_time)
 
             if dte:
                 dte = np.array(dte).min()
@@ -1768,6 +1760,7 @@ class Model(Material):
         """
         self._advector = Mesh_advector(self, axis)
 
+    @ndargs
     def add_passive_tracers(self, name, vertices=None,
                             particleEscape=True, centroids=None, zOnly=False):
         """ Add a swarm of passive tracers to the Model
@@ -2157,8 +2150,8 @@ class _ViscosityFunction():
 
                 if material.elasticity:
                     ElasticityHandler = material.elasticity
-                    mu = nd(ElasticityHandler.shear_modulus)
-                    dt_e = nd(ElasticityHandler.observation_time)
+                    mu = ElasticityHandler.shear_modulus
+                    dt_e = ElasticityHandler.observation_time
                     strainRate = fn.tensor.symmetric(
                         Model.velocityField.fn_gradient)
                     D_eff = (strainRate

@@ -7,20 +7,10 @@ try:
 except ImportError:
     raise ImportError("Can not find Underworld, please check your installation")
 
-try: 
-    from underworld.scaling import get_coefficients
-    from underworld.scaling import units as UnitRegistry
-    from underworld.scaling import non_dimensionalise
-    from underworld.scaling import dimensionalise
-
-except ImportError:
-    
-    # Fall back to local submodule if the underworld version
-    # does not have the scaling
-    from .scaling import get_coefficients
-    from .scaling import units as UnitRegistry
-    from .scaling import non_dimensionalise
-    from .scaling import dimensionalise
+from .scaling import get_coefficients
+from .scaling import units as UnitRegistry
+from .scaling import non_dimensionalise
+from .scaling import dimensionalise
 
 scaling_coefficients = get_coefficients()
 nd = non_dimensionalise
@@ -85,18 +75,15 @@ __email__ = "romain.beucher@unimelb.edu.au"
 
 _id = str(_uuid.uuid4())
 
-
 def Dimensionalize(*args, **kwargs):
     import warnings
     warnings.warn("""'Dimensionalize' has been changed to 'dimensionalise', please use the later""")
     return dimensionalise(*args, **kwargs)
 
-
 def nonDimensionalize(*args, **kwargs):
     import warnings
     warnings.warn("""'nonDimensionalize' has been changed to 'non_dimensionalise', please use the later""")
     return non_dimensionalise(*args, **kwargs)
-
 
 def mkdirs(newdir, mode=0o777):
     """
@@ -115,7 +102,6 @@ def mkdirs(newdir, mode=0o777):
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
-
 
 def _is_writable_dir(p):
     """

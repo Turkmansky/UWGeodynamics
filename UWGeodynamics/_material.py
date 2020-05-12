@@ -5,6 +5,7 @@ from collections import OrderedDict
 import json
 import pkg_resources
 from UWGeodynamics import u
+from .scaling import ndargs
 from ._utils import PhaseChange
 from ._rheology import ConstantViscosity
 from ._density import ConstantDensity
@@ -136,12 +137,40 @@ class Material(object):
 
     def __getitem__(self, name):
         return self.__dict__[name]
+    
+    @property
+    def diffusivity(self):
+        return self._diffusivity
+
+    @diffusivity.setter
+    @ndargs
+    def diffusivity(self, value):
+        self._diffusivity = value
+    
+    @property
+    def capacity(self):
+        return self._capacity
+
+    @capacity.setter
+    @ndargs
+    def capacity(self, value):
+        self._capacity = value
+    
+    @property
+    def radiogenicHeatProd(self):
+        return self._radiogenicHeatProd
+
+    @radiogenicHeatProd.setter
+    @ndargs
+    def radiogenicHeatProd(self, value):
+        self._radiogenicHeatProd = value
 
     @property
     def viscosity(self):
         return self._viscosity
 
     @viscosity.setter
+    @ndargs
     def viscosity(self, value):
         self._viscosity = _process_viscosity_value(value)
 
@@ -169,6 +198,7 @@ class Material(object):
         return self._density
 
     @density.setter
+    @ndargs
     def density(self, value):
         if isinstance(value, LinearDensity):
             self._density = value

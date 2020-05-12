@@ -1,7 +1,7 @@
 from __future__ import print_function, absolute_import
 from scipy.interpolate import interp1d
 import underworld as uw
-from UWGeodynamics import nd
+from UWGeodynamics.scaling import ndargs
 from mpi4py import MPI as _MPI
 
 comm = _MPI.COMM_WORLD
@@ -45,6 +45,7 @@ class FreeSurfaceProcessor(object):
     def _solve_sle(self):
         self._solver.solve()
 
+    @ndargs
     def _advect_surface(self, dt):
 
         if self.top:
@@ -57,8 +58,8 @@ class FreeSurfaceProcessor(object):
             vy = self.model.velocityField.data[self.top.data][:, 1]
 
             # Advect top surface
-            x2 = x + vx * nd(dt)
-            y2 = y + vy * nd(dt)
+            x2 = x + vx * dt
+            y2 = y + vy * dt
 
             # Spline top surface
             f = interp1d(x2, y2, kind='cubic', fill_value='extrapolate')

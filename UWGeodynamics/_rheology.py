@@ -6,7 +6,7 @@ import abc
 import underworld.function as fn
 import numpy as np
 from UWGeodynamics import UnitRegistry as u
-from UWGeodynamics import non_dimensionalise as nd
+from UWGeodyanamics.scaling import ndargs
 from copy import copy
 from collections import OrderedDict
 
@@ -86,11 +86,12 @@ def linearFrictionWeakening(cumulativeTotalStrain, FrictionCoef,
 class Limiter(fn.Function):
     """ Viscosity Limiter Class """
 
+    @ndargs
     def __init__(self, value, min_value=None, max_value=None):
 
         self.value = fn.Function.convert(value)
-        self.min_value = fn.Function.convert(nd(min_value))
-        self.max_value = fn.Function.convert(nd(max_value))
+        self.min_value = fn.Function.convert(min_value)
+        self.max_value = fn.Function.convert(max_value)
 
         if self.max_value and self.min_value:
             self._fn = fn.misc.min(self.value, self.max_value)
@@ -343,6 +344,7 @@ class VonMises(DruckerPrager):
 class ConstantViscosity(Rheology):
     """The newtonian rheology Class."""
 
+    @ndargs
     def __init__(self, viscosity):
         """Newtonian Rheology.
 
@@ -366,12 +368,13 @@ class ConstantViscosity(Rheology):
         return self._effectiveViscosity()
 
     def _effectiveViscosity(self):
-        return fn.Function.convert(nd(self.viscosity))
+        return fn.Function.convert(self.viscosity)
 
 
 class ViscousCreep(Rheology):
     """ Viscous Creep Class """
 
+    @ndargs
     def __init__(self,
                  name=None,
                  preExponentialFactor=1.0,
@@ -548,22 +551,22 @@ class ViscousCreep(Rheology):
                 temperature.
         """
 
-        A = nd(self.preExponentialFactor)
-        n = nd(self.stressExponent)
+        A = self.preExponentialFactor
+        n = self.stressExponent
         P = self.pressureField
         T = self.temperatureField
-        Q = nd(self.activationEnergy)
-        Va = nd(self.activationVolume)
-        p = nd(self.grainSizeExponent)
-        d = nd(self.grainSize)
-        r = nd(self.waterFugacityExponent)
-        fH2O = nd(self.waterFugacity)
+        Q = self.activationEnergy
+        Va = self.activationVolume
+        p = self.grainSizeExponent
+        d = self.grainSize
+        r = self.waterFugacityExponent
+        fH2O = self.waterFugacity
         I = self.strainRateInvariantField
         f = self.f
         #F = self.meltFraction
         #alpha = self.meltFractionFactor
-        R = nd(self.constantGas)
-        b = nd(self.BurgersVectorLength)
+        R = self.constantGas
+        b = self.BurgersVectorLength
 
         mu_eff = f * 0.5 * A**(-1.0 / n)
 
@@ -608,22 +611,6 @@ class CompositeViscosity(Rheology):
             muEff += 1.0 / viscosity.muEff
 
         return 1.0 / muEff
-
-
-class TemperatureAndDepthDependentViscosity(Rheology):
-
-    def __init__(self, eta0, beta, gamma, reference, temperatureField=None):
-
-        self._eta0 = nd(eta0)
-        self._gamma = gamma
-        self._beta = gamma
-        self._reference = nd(reference)
-
-    @property
-    def muEff(self):
-        coord = fn.input()
-        return (self._eta0 * fn.math.exp(self._gamma *
-                                         (coord[-1] - self._reference)))
 
 
 class ViscousCreepRegistry(object):
@@ -727,6 +714,7 @@ class PlasticityRegistry(object):
 
 class Elasticity(Rheology):
 
+    @ndargs
     def __init__(self, shear_modulus, observation_time):
         super(Elasticity, self).__init__()
         self.shear_modulus = shear_modulus
@@ -742,9 +730,9 @@ class Elasticity(Rheology):
             raise ValueError("Can not find viscosity field")
 
         # Maxwell relaxation time
-        alpha = self.viscosity / nd(self.shear_modulus)
+        alpha = self.viscosity / self.shear_modulus
         # observation time
-        dt_e = nd(self.observation_time)
+        dt_e = self.observation_time
         # Calculate effective viscosity
         mu_eff = (self.viscosity * dt_e) / (alpha + dt_e)
         return mu_eff
@@ -761,7 +749,7 @@ class Elasticity(Rheology):
         if not self.previousStress:
             raise ValueError("Can not find previous stress field")
 
-        elasticStressFn = self.viscosity / (nd(self.shear_modulus) *
-                                            nd(self.observation_time))
+        elasticStressFn = self.viscosity / (self.shear_modulus *
+                                            self.observation_time)
         elasticStressFn *= self.previousStress
         return elasticStressFn

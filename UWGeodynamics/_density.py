@@ -1,8 +1,7 @@
 from __future__ import print_function,  absolute_import
 import underworld.function as fn
-from UWGeodynamics import non_dimensionalise as nd
 from UWGeodynamics import UnitRegistry as u
-
+from UWGeodynamics.scaling import ndargs
 
 class Density(object):
 
@@ -14,6 +13,7 @@ class Density(object):
 
 class ConstantDensity(Density):
 
+    @ndargs
     def __init__(self, reference_density):
         """Constant density function
 
@@ -28,7 +28,7 @@ class ConstantDensity(Density):
         An UWGeodynamics Constant Density object
         """
         self.reference_density = reference_density
-        self._density = nd(reference_density)
+        self._density = reference_density
         self.name = "Constant ({0})".format(str(reference_density))
 
     def effective_density(self):
@@ -37,6 +37,7 @@ class ConstantDensity(Density):
 
 class LinearDensity(Density):
 
+    @ndargs
     def __init__(self, reference_density, thermalExpansivity=3e-5 / u.kelvin,
                  reference_temperature=273.15 * u.degK, beta=0. / u.pascal,
                  reference_pressure=0. * u.pascal):
@@ -68,16 +69,16 @@ class LinearDensity(Density):
         self.reference_temperature = reference_temperature
         self.thermalExpansivity = thermalExpansivity
         self.reference_pressure = reference_pressure
-        self._alpha = nd(thermalExpansivity)
-        self._beta = nd(beta)
-        self._Tref = nd(reference_temperature)
-        self._Pref = nd(reference_pressure)
+        self._alpha = thermalExpansivity
+        self._beta = beta
+        self._Tref = reference_temperature
+        self._Pref = reference_pressure
 
     def effective_density(self):
         """calculate effective_density based
            on PT conditions"""
 
-        density = nd(self.reference_density)
+        density = self.reference_density
 
         # Temperature dependency
         if not self.temperatureField:

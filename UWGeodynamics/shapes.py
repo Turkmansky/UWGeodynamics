@@ -2,12 +2,13 @@ from __future__ import print_function,  absolute_import
 import numpy as np
 import underworld as uw
 import underworld.function as fn
-from UWGeodynamics import non_dimensionalise as nd
+from UWGeodynamics.scaling import ndargs
 
 
 class Polygon(fn.Function):
     """Polygon Shape Class"""
 
+    @ndargs
     def __init__(self, vertices):
         """Create a polygon shape
 
@@ -24,7 +25,7 @@ class Polygon(fn.Function):
         self.vertices = vertices
         self.top = min([y for x, y in self.vertices])
         self.bottom = max([y for x, y in self.vertices])
-        vertices = [(nd(x), nd(y)) for x, y in self.vertices]
+        vertices = [(x, y) for x, y in self.vertices]
         self._fn = uw.function.shape.Polygon(np.array(vertices))
         super(Polygon, self).__init__(argument_fns=None)
         self._fncself = self._fn._fncself
@@ -39,7 +40,8 @@ class HalfSpace(fn.Function):
 
         Particles tested against this class are assigned a boolean value.
     """
-
+    
+    @ndargs
     def __init__(self, normal, origin=None, reverse=False):
         """ HalfSpace
 
@@ -60,12 +62,12 @@ class HalfSpace(fn.Function):
         """
 
         if isinstance(normal, (tuple, list)):
-            self.normal = fn.misc.constant([float(nd(val)) for val in normal])
+            self.normal = fn.misc.constant([float(val) for val in normal])
         else:
             raise ValueError("{0} must be a list or tuple".format(normal))
 
         if isinstance(origin, (tuple, list)):
-            self.origin = fn.misc.constant([float(nd(val)) for val in origin])
+            self.origin = fn.misc.constant([float(val) for val in origin])
         else:
             self.origin = fn.misc.constant([0.] * len(normal))
 
@@ -89,6 +91,7 @@ class HalfSpace(fn.Function):
 class Layer(fn.Function):
     """Layer 2D"""
 
+    @ndargs
     def __init__(self, top, bottom):
         """Create a 2D Layer object
 
@@ -107,8 +110,8 @@ class Layer(fn.Function):
         self.bottom = bottom
 
         coord = fn.input()
-        self._fn = ((coord[1] <= nd(self.top)) &
-                    (coord[1] >= nd(self.bottom)))
+        self._fn = ((coord[1] <= self.top) &
+                    (coord[1] >= self.bottom))
         super(Layer, self).__init__(argument_fns=None)
         self._fncself = self._fn._fncself
 
@@ -116,6 +119,7 @@ class Layer(fn.Function):
 class Layer3D(fn.Function):
     """Layer3D"""
 
+    @ndargs
     def __init__(self, top, bottom):
         """Create a 3D Layer object
 
@@ -134,14 +138,15 @@ class Layer3D(fn.Function):
         self.bottom = bottom
 
         coord = fn.input()
-        self._fn = ((coord[2] <= nd(self.top)) &
-                    (coord[2] >= nd(self.bottom)))
+        self._fn = ((coord[2] <= self.top) &
+                    (coord[2] >= self.bottom))
         super(Layer3D, self).__init__(argument_fns=None)
         self._fncself = self._fn._fncself
 
 
 class Layer2D(Layer):
 
+    @ndargs
     def __init__(self, top, bottom):
 
         Warning("Layer2D is now deprecated, use Layer instead")
@@ -151,6 +156,7 @@ class Layer2D(Layer):
 class Box(fn.Function):
     """Box"""
 
+    @ndargs
     def __init__(self, top, bottom, minX=0., maxX=0., minY=None, maxY=None):
         """Create a Box Shape
 
@@ -179,17 +185,17 @@ class Box(fn.Function):
 
         coord = fn.input()
         if (self.minY is not None) and (self.maxY is not None):
-            func = ((coord[1] <= nd(self.maxY)) &
-                    (coord[1] >= nd(self.minY)) &
-                    (coord[0] <= nd(self.maxX)) &
-                    (coord[0] >= nd(self.minX)) &
-                    (coord[2] <= nd(self.top)) &
-                    (coord[2] >= nd(self.bottom)))
+            func = ((coord[1] <= self.maxY) &
+                    (coord[1] >= self.minY) &
+                    (coord[0] <= self.maxX) &
+                    (coord[0] >= self.minX) &
+                    (coord[2] <= self.top) &
+                    (coord[2] >= self.bottom))
         else:
-            func = ((coord[1] <= nd(self.top)) &
-                    (coord[1] >= nd(self.bottom)) &
-                    (coord[0] <= nd(self.maxX)) &
-                    (coord[0] >= nd(self.minX)))
+            func = ((coord[1] <= self.top) &
+                    (coord[1] >= self.bottom) &
+                    (coord[0] <= self.maxX) &
+                    (coord[0] >= self.minX))
         self._fn = func
         super(Box, self).__init__(argument_fns=None)
         self._fncself = self._fn._fncself
@@ -197,7 +203,8 @@ class Box(fn.Function):
 
 class Disk(fn.Function):
     """Disk"""
-
+    
+    @ndargs
     def __init__(self, center, radius):
         """Create a Disk shape
 
@@ -217,8 +224,8 @@ class Disk(fn.Function):
         self.top = center[1] + self.radius
         self.bottom = center[1] - self.radius
 
-        center = tuple(nd(x) for x in list(self.center))
-        radius = nd(self.radius)
+        center = tuple(x for x in list(self.center))
+        radius = self.radius
         coord = fn.input() - center
         self._fn = fn.math.dot(coord, coord) < radius**2
         super(Disk, self).__init__(argument_fns=None)
