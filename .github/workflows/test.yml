@@ -15,5 +15,5 @@ jobs:
         run: cd workspace & pip install -e .
       - name: Run tests
         run: pip install pytest
-      - name: check:
+      - name: check
         run: ls -l
